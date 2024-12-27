@@ -25,6 +25,7 @@
 */
 
 // errors.h
+#pragma once
 
 enum { ERRNORMAL,ERRFATAL,ERRINTERNAL,ERRLPASS,ERRREP,ERRPASS1 };
 

@@ -25,6 +25,7 @@
 */
 
 // datastructures.h
+#pragma once
 
 const int FUNTABSIZE=255;
 
@@ -42,6 +43,8 @@ typedef void(*mFun)(std::string,Data&);
 
 void startmacrolabel(RawSource *rs, std::string name, std::string file, int line);
 void endmacrolabel(RawSource *rs);
+
+#include "errors.h"
 
 class Data {
 public:
