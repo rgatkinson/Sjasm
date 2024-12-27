@@ -28,7 +28,7 @@
 
 Options options;
 
-string version="0.42c";
+string version="0.42d";
 
 string starttime,startdate,sourcefilename,destfilename,listfilename,expfilename,symfilename;
 int listcurlin,adres,page,pass,labsnok,mapadr,synerr,again,labelnotfound,macronummer=0,unieknummer=0,curlin,lablin;
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
 
   if (symfile) outputsymbols();
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && 0
   cout << "\nPRESS ENTER";
   cin.get();
 #endif
