@@ -38,11 +38,11 @@ public:
   ReadFile(string);
   ~ReadFile();
   void readtostringlist(StringList&);
-  void getbuffer(byte *&buffer,int &size) { buffer=_buffer; size=_size; }
+  void getbuffer(ubyte *&buffer,int &size) { buffer=_buffer; size=_size; }
   bool ok() { return _buffer!=0; }
 private:
   int _size;
-  byte *_buffer;
+  ubyte *_buffer;
 };
 
 class WriteFile {
