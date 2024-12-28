@@ -25,6 +25,74 @@
 */
 
 // output.h
+#pragma once
+
+#include "fileio.h"
+#include <format>
+
+// Writes a file in Intel hex format. Optimized for readability, not speed
+struct HexFileWriter {
+private:
+    WriteFile _file;
+    FILEMODE  _mode;
+public:
+    HexFileWriter(const std::string& filename, FILEMODE mode) : _file(filename, mode), _mode(mode) {
+        // empty
+    }
+
+    bool Ok() {
+        return _file.ok();
+    }
+
+    void Write(int addr, Data &d) {
+        ubyte* pbRemaining = d.getdatap();
+        int cbRemaining = d.size();
+        Write(addr, pbRemaining, cbRemaining);
+    }
+
+    void Write(int addr, ubyte* pbRemaining, int cbRemaining) {
+        constexpr int cbChunk = 16;
+        while (cbRemaining > 0) {
+            auto cbLine = std::min(cbChunk, cbRemaining);
+            int recordType = 0x00;
+            std::string line { std::format(":{:02x}{:04x}{:02x}", cbLine, addr, recordType) };
+
+            int checksum = 0;
+            AddBytes8(checksum, cbLine);
+            AddBytes16(checksum, addr);
+            AddBytes16(checksum, recordType);
+
+            for (int ib = 0; ib < cbLine; ++ib) {
+                line.append(std::format("{:02x}", pbRemaining[ib]));
+                AddBytes8(checksum, pbRemaining[ib]);
+            }
+
+            checksum = (checksum & 0xFF);
+            checksum = - checksum; // twos complement
+            checksum = (checksum & 0xFF);
+            line.append(std::format("{:02x}", checksum));
+
+            _file.write(line);
+
+            pbRemaining += cbLine;
+            cbRemaining -= cbLine;
+            addr += cbLine;
+        }
+    }
+
+    void Skip(int addr, int count) {
+        // TODO: do we need to do anything here?
+    }
+
+private:
+    void AddBytes8(int& total, int value) {
+        total += static_cast<ubyte>(value);
+    }
+    void AddBytes16(int& total, int value) {
+        AddBytes8(total, (value >> 8) & 0x0ff);
+        AddBytes8(total, (value >> 0) & 0x0ff);
+    }
+};
 
 extern Rout *routlabel;
 
@@ -110,8 +178,8 @@ public:
 //  void addpool(int,int); //
   void checkparts();
   void dump(StringList&);
-  void save(WriteFile &file);
-  void saveoverlay(WriteFile &file);
+  void save(WriteFile&file, HexFileWriter& hexFile);
+  void saveoverlay(WriteFile&file, HexFileWriter& hexFile);
 private:
 //  struct _Pool { 
 //    _Pool (int n_data,int n_adres) : _data(n_data), _adres(n_adres) {}

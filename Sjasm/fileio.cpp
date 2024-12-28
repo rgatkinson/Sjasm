@@ -122,18 +122,29 @@ void WriteFile::write(StringList &sl) {
   }
 }
 
-void WriteFile::skip(int len){
-  if (_mode==OVERWRITE) {
-    while (len--) _buffer.push(0);
-  } else {
-    _writebuf();
-    fseek(_file,len,SEEK_CUR);
-  }
+void WriteFile::write(const std::string& s) {
+    fputs(s.c_str(),_file);
+    fputs(NEWLINE,_file);
+}
+
+void WriteFile::skip(int len) {
+    if (_mode == OVERWRITE) {
+        while (len--) {
+            _buffer.push(0);
+        }
+    } else {
+        _writebuf();
+        fseek(_file, len,SEEK_CUR);
+    }
 }
 
 void WriteFile::_writebuf() {
-  if (_buffer.size()) if((int)fwrite(_buffer.getdatap(),1,_buffer.size(),_file)<_buffer.size()) error("Write error",ERRFATAL);
-  _buffer.clear();
+    if (_buffer.size()) {
+        if ((int)fwrite(_buffer.getdatap(), 1, _buffer.size(), _file) < _buffer.size()) {
+            error("Write error", ERRFATAL);
+        }
+    }
+    _buffer.clear();
 }
 
 //eof

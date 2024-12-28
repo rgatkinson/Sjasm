@@ -25,6 +25,7 @@
 */
 
 // fileio.h
+#pragma once
 
 enum FILEMODE { OVERWRITE, UPDATE };
 extern StringList paths;
@@ -51,6 +52,7 @@ public:
   ~WriteFile();
   void write(Data&);
   void write(StringList&);
+  void write(const std::string&);
   void skip(int);
   bool ok() { return _file!=0; }
 private:

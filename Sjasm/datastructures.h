@@ -48,28 +48,56 @@ void endmacrolabel(RawSource *rs);
 
 class Data {
 public:
-  Data() : _data(0), _size(0), _maxsize(4)  { _resize(_maxsize); }
-  Data(int n_maxsize) : _data(0), _size(0), _maxsize(n_maxsize) { _resize(_maxsize); }
-  Data(ubyte *n_data,int n_size) : _data(0), _size(n_size), _maxsize(n_size) { _resize(n_size); memcpy(_data,n_data,n_size); }
-  ~Data() { delete [] _data; }
-  void setdata(ubyte *buffer, int size) { _data=new ubyte[size]; memcpy(_data,buffer,size); _size=_maxsize=size; }
-  void push(ubyte n_byte) { if (_size>=_maxsize) _grow(_size); _data[_size]=n_byte; ++_size; }
-  void push(const Data &n_data) { 
-    if (_size+n_data._size>=_maxsize) _grow(_size+n_data._size);
-    memcpy(_data+_size,n_data._data,n_data._size);
-    _size+=n_data._size;
-  }
-  ubyte operator[](int index) const { return _data[index]; }
-  ubyte &operator[](int index) { if (index>=_maxsize) _grow(index); if (_size<=index) _size=index+1; return _data[index]; }
-  int size() { return _size; }
-  void clear() { _size=0; }
-  ubyte *getdatap(int offset=0) { return _data+offset; }
-  bool empty() { return _size==0; }
+    Data() : _data(nullptr), _size(0), _maxsize(4) { _resize(_maxsize); }
+    Data(int n_maxsize) : _data(nullptr), _size(0), _maxsize(n_maxsize) { _resize(_maxsize); }
+
+    Data(ubyte* n_data, int n_size) : _data(nullptr), _size(n_size), _maxsize(n_size) {
+        _resize(n_size);
+        memcpy(_data, n_data, n_size);
+    }
+
+    ~Data() { delete [] _data; }
+
+    void setdata(ubyte* buffer, int size) {
+        _data = new ubyte[size];
+        memcpy(_data, buffer, size);
+        _size = _maxsize = size;
+    }
+
+    void push(ubyte n_byte) {
+        if (_size >= _maxsize)
+            _grow(_size);
+        _data[_size] = n_byte;
+        ++_size;
+    }
+
+    void push(const Data& n_data) {
+        if (_size + n_data._size >= _maxsize)
+            _grow(_size + n_data._size);
+        memcpy(_data + _size, n_data._data, n_data._size);
+        _size += n_data._size;
+    }
+
+    ubyte operator[](int index) const { return _data[index]; }
+
+    ubyte& operator[](int index) {
+        if (index >= _maxsize)
+            _grow(index);
+        if (_size <= index)
+            _size = index + 1;
+        return _data[index];
+    }
+
+    int    size() { return _size; }
+    void   clear() { _size = 0; }
+    ubyte* getdatap(int offset = 0) { return _data + offset; }
+    bool   empty() { return _size == 0; }
+
 private:
-  ubyte *_data;
-  int _size,_maxsize;
-  void _grow(int);
-  void _resize(int);
+    ubyte* _data;
+    int    _size, _maxsize;
+    void   _grow(int);
+    void   _resize(int);
 };
 
 class DefineArgTable {

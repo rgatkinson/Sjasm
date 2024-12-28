@@ -28,6 +28,10 @@
 
 #include "sjasm.h"
 
+#include <filesystem>
+#include <iostream>
+namespace fs = std::filesystem;
+
 Rout *routlabel;
 vector<Output*> output;
 int onr;
@@ -307,34 +311,57 @@ void Page::dump(StringList &sl) {
   }
 }
 
-void Page::save(WriteFile &file) {
-  int adres=_org;
-  list<Part>::iterator ip=_part.begin();
-  while (ip!=_part.end()) {
-    if (ip->_adres>adres) file.skip(ip->_adres-adres);
-    switch(ip->_multipage) {
-    case 0: file.write(ip->_rout->getdata()); break;
-    case 1: file.write(ip->_rout->getdata(0,ip->_len)); break;
-    case 2: file.write(ip->_rout->getdata(ip->_offset,ip->_len)); break;
-      break;
-    default: error("Oops!",ERRFATAL);
+void Page::save(WriteFile& file, HexFileWriter& hexFile) {
+    int                  adres = _org;
+    list<Part>::iterator ip    = _part.begin();
+    while (ip != _part.end()) {
+        if (ip->_adres > adres) {
+            file.skip(ip->_adres - adres);
+            hexFile.Skip(adres, ip->_adres - adres);
+            adres = ip->_adres;
+        }
+        switch (ip->_multipage) {
+            case 0: 
+                file.write(ip->_rout->getdata());
+                hexFile.Write(adres, ip->_rout->getdata());
+                break;
+            case 1: 
+                file.write(ip->_rout->getdata(0, ip->_len));
+                hexFile.Write(adres, ip->_rout->getdata(0, ip->_len));
+                break;
+            case 2: 
+                file.write(ip->_rout->getdata(ip->_offset, ip->_len));
+                hexFile.Write(adres, ip->_rout->getdata(ip->_offset, ip->_len));
+                break;
+            default: error("Oops!", ERRFATAL);
+        }
+        adres = ip->_adres + ip->_len;
+        ++ip;
     }
-    adres=ip->_adres+ip->_len;
-    ++ip;
-  }
-  if (_size>0 && adres-_org<_size) file.skip(_size-(adres-_org));
+    if (_size > 0 && adres - _org < _size) {
+        file.skip(_size - (adres - _org));
+        hexFile.Skip(adres, _size - (adres - _org));
+    }
 }
 
-void Page::saveoverlay(WriteFile &file) {
-  int adres=_org;
-  list<Part>::iterator ip=_opart.begin();
-  while (ip!=_opart.end()) {
-    if (ip->_adres>adres) file.skip(ip->_adres-adres);
-    file.write(ip->_rout->getdata());
-    adres=ip->_adres+ip->_len;
-    ++ip;
-  }
-  if (_size>0 && adres-_org<_size) file.skip(_size-(adres-_org));
+void Page::saveoverlay(WriteFile&file, HexFileWriter& hexFile) {
+    int                  adres = _org;
+    list<Part>::iterator ip    = _opart.begin();
+    while (ip != _opart.end()) {
+        if (ip->_adres > adres) {
+            file.skip(ip->_adres - adres);
+            hexFile.Skip(adres, ip->_adres - adres);
+            adres = ip->_adres;
+        }
+        file.write(ip->_rout->getdata());
+        hexFile.Write(adres, ip->_rout->getdata());
+        adres = ip->_adres + ip->_len;
+        ++ip;
+    }
+    if (_size > 0 && adres - _org < _size) {
+        file.skip(_size - (adres - _org));
+        hexFile.Skip(adres, _size - (adres - _org));
+    }
 }
 
 void Output::defpage(int n_page, int n_org, int n_size) {
@@ -500,29 +527,46 @@ void Output::sort() {
 }
 
 void Output::save() {
-  if (_rout.size()<2) {
-    if (!_rout.size()) {
+    if (_rout.size() < 2) {
+        if (!_rout.size()) {
 #ifdef _DEBUG
-      error("output leeg?");
+            error("output leeg?");
 #endif
-      return;
+            return;
+        }
+        if (_rout[0]->getdata().size() == 0) {
+            return;
+        }
     }
-    if (_rout[0]->getdata().size()==0) return;
-  }
 
-  {
-    WriteFile file(_filename,_mode);
-    if (file.ok()) {
-      for(int i=0; i!=_page.size(); ++i) 
-        if (_page[i]) _page[i]->save(file); 
-        else if (options.allpages) error("Page does not exist",tostr(i));
+    fs::path hexFilename{_filename};
+    hexFilename.replace_extension(".hex");
+
+    {
+        WriteFile file(_filename, _mode);
+        HexFileWriter hexFile(hexFilename.string(), _mode);
+        if (file.ok() && hexFile.Ok()) {
+            for (int i = 0; i != _page.size(); ++i) {
+                if (_page[i]) {
+                    _page[i]->save(file, hexFile);
+                } else
+                    if (options.allpages) {
+                        error("Page does not exist", tostr(i));
+                    }
+            }
+        }
     }
-  }
 
-  {
-    WriteFile file(_filename,UPDATE);
-    if (file.ok()) for(int i=0; i!=_page.size(); ++i) if (_page[i]) _page[i]->saveoverlay(file);
-  }
+    {
+        WriteFile file(_filename, UPDATE);
+        HexFileWriter hexFile(hexFilename.string(), UPDATE);
+        if (file.ok())
+            for (int i = 0; i != _page.size(); ++i) {
+                if (_page[i]) {
+                    _page[i]->saveoverlay(file, hexFile);
+                }
+            }
+    }
 }
 
 //void Page::addpool(int n_adres, int n_val) {
